@@ -63,6 +63,7 @@ public class StudentList<T> implements List<T> {
 
     private class Iter implements Iterator<T> {
         int currentElement;
+        int lastReturnedElement = -1;
 
         Iter() {
         }
@@ -74,18 +75,23 @@ public class StudentList<T> implements List<T> {
 
         @Override
         public T next() {
+            int i = currentElement;
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            return StudentList.this.get(currentElement++);
+            lastReturnedElement++;
+            currentElement++;
+            return StudentList.this.get(i);
         }
 
         @Override
         public void remove() {
-            if (currentElement > 0) {
-                StudentList.this.remove(--currentElement);
+            if (lastReturnedElement >= 0) {
+                StudentList.this.remove(lastReturnedElement);
+            }else if (lastReturnedElement == -1) {
+                StudentList.this.remove(++lastReturnedElement);
             }
-            throw new NoSuchElementException();
+            lastReturnedElement--;
         }
     }
 
@@ -256,8 +262,10 @@ public class StudentList<T> implements List<T> {
         public void set(T t) {
             if (hasPrevious()) {
                 StudentList.this.set(--currentElement, t);
-            }
+                currentElement++;
+            }else {
                 throw new NoSuchElementException();
+            }
         }
 
         @Override
@@ -270,11 +278,14 @@ public class StudentList<T> implements List<T> {
 
     @Override
     public List<T> subList(int i, int i1) {
-        List<T> subList = new StudentList<>();
-        for (int j = i; j < i1; j++) {
-            subList.add(this.get(j));
+        if (i >= 0 && i < i1 && i1 < size()) {
+            List<T> subList = new StudentList<>();
+            for (int j = i; j < i1; j++) {
+                subList.add(this.get(j));
+            }
+            return subList;
         }
-        return subList;
+        throw new IndexOutOfBoundsException();
     }
 
     @Override
