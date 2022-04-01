@@ -1,9 +1,7 @@
 package com.endava.internship.collections;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -12,10 +10,13 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,36 +36,27 @@ class StudentListTest {
     }
 
     @Test
-    void constructorShouldThrowAnExceptionIfTheCapacityIsLessThenZero() {
-        assertThrows(IllegalArgumentException.class, () -> new StudentList<Student>(-1));
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = {5, 8, 10})
-    void shouldPassTestIfCapacityIsEqualsToInsertedNumberWhenWeInstantiateAnObject(int index) throws NoSuchFieldException, IllegalAccessException {
-        List<Student> studentList = new StudentList<>(index);
-
-        Field capacityField = StudentList.class.getDeclaredField("capacity");
-        capacityField.setAccessible(true);
-
-        Integer cf = (Integer) capacityField.get(studentList);
-        assertEquals(10, cf);
+    void shouldThrowIllegalArgumentExceptionWithInvalidParameter() {
+        Throwable exceptionThatWasThrown = assertThrows(IllegalArgumentException.class, () -> new StudentList<Student>(-1));
+        assertEquals(exceptionThatWasThrown.getMessage(), "Illegal Capacity: " + "-1");
     }
 
     @Test
-    void shouldReturnTrueIfInsertedValueInTheConstructorIsEqualsToCapacityWhenWeInstantiateAnObject() throws NoSuchFieldException, IllegalAccessException {
+    void shouldCreateAListWithDefaultCapacity() {
+        List<Student> studentList = new StudentList<>(8);
+
+        assertNotNull(studentList);
+    }
+
+    @Test
+    void shouldCreatListWithLengthFifteen() {
         List<Student> studentList = new StudentList<>(15);
 
-        Field capacityField = StudentList.class.getDeclaredField("capacity");
-        capacityField.setAccessible(true);
-
-        Integer cf = (Integer) capacityField.get(studentList);
-        boolean isTheSameValue = cf == 15;
-        assertTrue(isTheSameValue);
+        assertNotNull(studentList);
     }
 
     @Test
-    void shouldReturnTheSizeEqualsToTheNumberOfObjectsInArrayWhenWeCallTheSizeMethod() {
+    void shouldReturnTheSizeEqualsToTree() {
         int listSize = studentList.size();
 
         assertEquals(listSize, 3);
@@ -81,136 +73,107 @@ class StudentListTest {
         assertFalse(studentList.isEmpty());
     }
 
-    @Test
-    void shouldReturnTrueWhenWeCallMethodContainsThatHasAsArgumentAnObjectThatExistInArray() {
-        Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
-        Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
-        studentList.add(st1);
-        studentList.add(st2);
-        boolean existSt1 = studentList.contains(st1);
-        boolean existSt2 = studentList.contains(st2);
-
-        assertTrue(existSt1);
-        assertTrue(existSt2);
+    @ParameterizedTest
+    @MethodSource("provideStudentForContains")
+    void contains_ShouldReturnExpectedBooleans(Student student, boolean expected) {
+        assertEquals(expected, studentList.contains(student));
     }
 
-    @Test
-    void shouldReturnFalseWhenWeCallMethodContainsThatHasAsArgumentAnObjectThatExistInArray() {
+    private static Stream<Arguments> provideStudentForContains() {
+        Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st4 = new Student("Patru", LocalDate.of(2006, 1, 1), "Student PATRU");
-        boolean existSt3 = studentList.contains(st4);
-
-        assertFalse(existSt3);
+        return Stream.of(
+                Arguments.of(st1, true),
+                Arguments.of(st4, false),
+                Arguments.of(null, false));
     }
 
-    @Test
-    void shouldReturnFalseIfTheMethodContainsHasAsArgumentNull() {
-        boolean existSt = studentList.contains(null);
-
-        assertFalse(existSt);
-    }
-
-    @Test
-    void shouldReturnTrueIfTheMethodContainsHasAsArgumentAnObject() {
-        Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
-        boolean existSt = studentList.contains(st1);
-
-        assertTrue(existSt);
-    }
-
-    @Test
-    void shouldReturnTrueIfTheIteratorHasNext() {
-        Iterator<Student> iterator = studentList.iterator();
-
-        assertTrue(iterator.hasNext());
-    }
-
-    @Test
-    void shouldThrowNoSuchElementExceptionWhenNextDoesNotExist() {
-        List<Student> studentList = new StudentList<>();
-        Iterator<Student> iterator = studentList.iterator();
-
-        assertThrows(NoSuchElementException.class, () -> iterator.next());
-    }
-
-    @Test
-    void shouldConfirmIfTheObjectStillExistsInTheListWhenWeCallRemoveMethod() {
+    @Nested
+    class testAllMethodsOfTheInnerClassIterator {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
-        Iterator<Student> iterator = studentList.iterator();
-        iterator.remove();
+        @Test
+        void shouldReturnTrueIfTheIteratorHasNext() {
+            Iterator<Student> iterator = studentList.iterator();
 
-        assertThat(studentList).hasSize(2)
-                .contains(st2)
-                .doesNotContain(st1);
+            assertTrue(iterator.hasNext());
+        }
+
+        @Test
+        void shouldThrowNoSuchElementExceptionWhenNextDoesNotExist() {
+            List<Student> studentList = new StudentList<>();
+            Iterator<Student> iterator = studentList.iterator();
+
+            assertThrows(NoSuchElementException.class, () -> iterator.next());
+        }
+
+        @Test
+        void shouldConfirmIfTheObjectExistsInTheList() {
+            Iterator<Student> iterator = studentList.iterator();
+            iterator.remove();
+
+            assertThat(studentList).hasSize(2)
+                    .contains(st2)
+                    .doesNotContain(st1);
+        }
+
+        @Test
+        void shouldRemoveTheNextElement() {
+            Iterator<Student> iterator = studentList.iterator();
+            iterator.next();
+            iterator.remove();
+
+            assertThat(studentList).hasSize(2)
+                    .contains(st2)
+                    .doesNotContain(st1);
+        }
     }
 
     @Test
-    void shouldRemoveTheNextElementAfterNextWhenWeCallRemoveAfterNext() {
-        Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
-        Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
-        Iterator<Student> iterator = studentList.iterator();
-        iterator.next();
-        iterator.remove();
-
-        assertThat(studentList).hasSize(2)
-                .contains(st2)
-                .doesNotContain(st1);
-    }
-
-    @Test
-    void shouldConvertTheListToArrayWhenWeCallMethodToArray() {
-        List<Student> list = new ArrayList<>();
+    void shouldConvertTheListToArray() {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
-        list.add(st1);
-        list.add(st2);
-        list.add(st3);
 
         Object[] actualArrayOfStudents = studentList.toArray();
-        Object[] expectedArrayOfStudents = list.toArray();
+        Object[] expectedArrayOfStudents = new Student[]{st1, st2, st3};
 
         assertArrayEquals(actualArrayOfStudents, expectedArrayOfStudents);
     }
 
     @Test
-    void shouldReturnRemovedObjectWhenWeCallRemoveMethodWithArgument() {
+    void shouldReturnRemovedObject() {
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student removedStudent = studentList.remove(1);
 
         assertEquals(st2, removedStudent);
-    }
-
-    @Test
-    void shouldNotContainRemovedObjectWhenWeCallMethodRemoveWithArgument() {
-        Student removedStudent = studentList.remove(1);
-        boolean isContainTheStudent = studentList.contains(removedStudent);
-
-        assertFalse(isContainTheStudent);
+        assertFalse(studentList.contains(removedStudent));
     }
 
     @Test
     void shouldThrowIndexOutOfBoundsExceptionWhenTheIndexDoesNotExist() {
         assertThrows(IndexOutOfBoundsException.class, () -> studentList.remove(-1));
-        assertThrows(IndexOutOfBoundsException.class, () -> studentList.remove(3));
+        Throwable exceptionThatWasThrown = assertThrows(IndexOutOfBoundsException.class, () -> studentList.remove(3));
+
+        assertEquals(exceptionThatWasThrown.getMessage(), "Insertion index was out of range. Must be non-negative and less than size");
     }
 
-    @Test
-    void shouldRemoveObjectFromListWhenWeCallMethodRemove() {
+    @ParameterizedTest
+    @MethodSource("provideStudentForRemove")
+    void remove_ShouldReturnExpectedBooleans(Student student, boolean expected) {
+        assertEquals(expected, studentList.remove(student));
+    }
+
+    private static Stream<Arguments> provideStudentForRemove() {
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
-
-        assertTrue(studentList.remove(st2));
+        Student st4 = new Student("Patru", LocalDate.of(2006, 1, 1), "Student PATRU");
+        return Stream.of(
+                Arguments.of(st2, true),
+                Arguments.of(st4, false));
     }
 
     @Test
-    void shouldNotRemoveObjectFromListWhenWeCallRemoveMethodBecauseItDoesNotExistThere() {
-        Student st4 = new Student("Patru", LocalDate.of(2006, 1, 1), "Student FOUR");
-
-        assertFalse(studentList.remove(st4));
-    }
-
-    @Test
-    void shouldClearTheListWhenWeCallTheMethodClear() {
+    void shouldClearTheList() {
         studentList.clear();
 
         assertEquals(studentList.size(), 0);
@@ -225,13 +188,15 @@ class StudentListTest {
     }
 
     @Test
-    void shouldThrowAnIndexOutOfBoundsExceptionWhenWeCallMethodGetWithNonExistingIndex() {
+    void shouldThrowIndexOutOfBoundsExceptionWhenGetIndexIsInvalid() {
         assertThrows(IndexOutOfBoundsException.class, () -> studentList.get(3));
-        assertThrows(IndexOutOfBoundsException.class, () -> studentList.get(-1));
+        Throwable exceptionThatWasThrown = assertThrows(IndexOutOfBoundsException.class, () -> studentList.get(-1));
+
+        assertEquals(exceptionThatWasThrown.getMessage(), "Index should be greater then or equal to 0 and less then " + "3");
     }
 
     @Test
-    void shouldSetTheObjectAtTheGivenIndexWhenWeCallMethodSet() {
+    void shouldSetTheObjectAtTheGivenIndex() {
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
         Student setStudent = studentList.set(1, st3);
 
@@ -239,15 +204,16 @@ class StudentListTest {
     }
 
     @Test
-    void shouldThrowIndexOutOfBoundsExceptionWhenWeCallMethodSetWithNonExistingIndex() {
+    void shouldThrowIndexOutOfBoundsExceptionWhenSetIndexIsInvalid() {
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
 
         assertThrows(IndexOutOfBoundsException.class, () -> studentList.set(3, st3));
-        assertThrows(IndexOutOfBoundsException.class, () -> studentList.set(-1, st3));
+        Throwable exceptionThatWasThrown = assertThrows(IndexOutOfBoundsException.class, () -> studentList.set(-1, st3));
+        assertEquals(exceptionThatWasThrown.getMessage(), "Insertion index was out of range. Must be non-negative and less than size");
     }
 
     @Test
-    void shouldAddTheObjectAtTheIndicatedIndexWhenWeCallTheMethodAdd() {
+    void shouldAddTheObjectAtTheIndicatedIndex() {
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
         studentList.add(1, st3);
 
@@ -255,7 +221,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldResizeTheArrayIfTheIndexIsEqualsToSizeWhenWeCallTheMethodAdd() {
+    void shouldAddObjectAtTheGivenIndex() {
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
         studentList.add(st3);
         studentList.add(st3);
@@ -271,7 +237,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldResizeTheArrayIfTheIndexIsEqualsToSizeWhenWeCallTheMethodAddAddAll() {
+    void shouldAddAllObjects() {
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
         studentList.add(st3);
         studentList.add(st3);
@@ -279,22 +245,23 @@ class StudentListTest {
         studentList.add(st3);
         studentList.add(st3);
         studentList.add(st3);
-        studentList.addAll(Arrays.asList(st3,st3));
+        studentList.addAll(Arrays.asList(st3, st3));
         boolean isTheSizeMoreThanCapacityAndEqualsToTheNumberOfElementsInArray = 11 == studentList.size();
 
         assertTrue(isTheSizeMoreThanCapacityAndEqualsToTheNumberOfElementsInArray);
     }
 
     @Test
-    void shouldThrowIndexOutOfBoundsExceptionWhenWeTryToAddAnObjectAtNonExistingIndex() {
+    void shouldThrowIndexOutOfBoundsExceptionWhenAddIndexIsInvalid() {
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
 
         assertThrows(IndexOutOfBoundsException.class, () -> studentList.add(-1, st3));
-        assertThrows(IndexOutOfBoundsException.class, () -> studentList.add(4, st3));
+        Throwable exceptionThatWasThrown = assertThrows(IndexOutOfBoundsException.class, () -> studentList.add(4, st3));
+        assertEquals(exceptionThatWasThrown.getMessage(), "Insertion index was out of range. Must be non-negative and less than or equal to size");
     }
 
     @Test
-    void shouldPassTheTestIdGivenObjectIsAtTheCorrectIndexWhenWeCallIndexOf() {
+    void shouldGiveTheCorrectIndexOfTheObject() {
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
 
         assertThat(studentList.indexOf(st2)).isEqualTo(1);
@@ -302,14 +269,14 @@ class StudentListTest {
     }
 
     @Test
-    void shouldNotPassTheTestWhenWeCallIndexOfWithAnObjectWhichDoesNotExistInTheList() {
+    void shouldReturnsMinusOneIfTheObjectIsNotOnTheListWhenIndexOf() {
         Student st4 = new Student("Patru", LocalDate.of(2006, 1, 1), "Student FOUR");
 
         assertThat(studentList.indexOf(st4)).isEqualTo(-1);
     }
 
     @Test
-    void shouldReturnTheLastIndexOfTheObjectWhenWeCallLastIndexOf() {
+    void shouldReturnTheLastIndexOfTheObject() {
         List<Student> studentList = new StudentList<>();
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
@@ -323,15 +290,14 @@ class StudentListTest {
     }
 
     @Test
-    void shouldReturnMinusOneIfTheListDoesNotContainsTheObjectWhenWeCallMethodLastIndexOf() {
-        List<Student> studentList = new StudentList<>();
+    void shouldReturnMinusOneIfTheListDoesNotContainsTheObjectWhenLastIndexOf() {
         Student st4 = new Student("Patru", LocalDate.of(2006, 1, 1), "Student FOUR");
 
-        assertEquals(-1, studentList.lastIndexOf(st4));
+        assertThat(studentList.lastIndexOf(st4)).isEqualTo(-1);
     }
 
     @Test
-    void shouldStartFromTheIndexZeroWhenWeCallListIterator() {
+    void shouldStartFromTheIndexZero() {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         boolean indexZero = st1.equals(studentList.listIterator().next());
 
@@ -339,7 +305,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldStartFromTheGivenIndexWhenWeCallListIterator() {
+    void shouldStartFromTheGivenIndex() {
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         boolean theListIteratorStartFromIndex = st2.equals(studentList.listIterator(1).next());
 
@@ -350,7 +316,7 @@ class StudentListTest {
     class testAllMethodsOfTheInnerClassListIterator {
 
         @Test
-        void shouldStartFromTheGivenIndexWhenWeCallingIterator() {
+        void shouldStartFromTheGivenIndex() {
             Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
             boolean indexOne = st2.equals(studentList.listIterator(1).next());
 
@@ -358,7 +324,7 @@ class StudentListTest {
         }
 
         @Test
-        void shouldReturnTrueWhenWeCallHasPreviousAndPreviousObjectExists() {
+        void shouldReturnTrueIfThePreviousObjectExists() {
             ListIterator<Student> listIterator = studentList.listIterator();
             listIterator.next();
 
@@ -366,14 +332,14 @@ class StudentListTest {
         }
 
         @Test
-        void shouldReturnFalseWhenWeCallasPreviousAndWeDoNotCallNextMethod() {
+        void shouldReturnFalseIfPreviousObjectDoesNotExists() {
             ListIterator<Student> listIterator = studentList.listIterator();
 
             assertFalse(listIterator.hasPrevious());
         }
 
         @Test
-        void shouldReturnPreviousElementWhenWeCallMethodPrevious() {
+        void shouldReturnPreviousElement() {
             Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
             ListIterator<Student> listIterator = studentList.listIterator();
             listIterator.next();
@@ -382,14 +348,14 @@ class StudentListTest {
         }
 
         @Test
-        void shouldReturnNoSuchElementExceptionWhenWeCallPreviousMethodAndPreviousObjectDoesNotExist() {
+        void shouldReturnNoSuchElementExceptionWhenPreviousObjectDoesNotExist() {
             ListIterator<Student> listIterator = studentList.listIterator();
 
             assertThrows(NoSuchElementException.class, () -> listIterator.previous());
         }
 
         @Test
-        void shouldReturnNextIndexWhenWeCallNextIndex() {
+        void shouldReturnNextIndex() {
             ListIterator<Student> listIterator = studentList.listIterator();
             listIterator.next();
 
@@ -397,7 +363,7 @@ class StudentListTest {
         }
 
         @Test
-        void shouldReturnPreviousIndexWhenWeCallPreviousIndexMethod() {
+        void shouldReturnPreviousIndex() {
             ListIterator<Student> listIterator = studentList.listIterator();
             listIterator.next();
 
@@ -405,17 +371,16 @@ class StudentListTest {
         }
 
         @Test
-        void shouldThrowsIndexOutOfBoundsExceptionWhenWeCallPreviousIndexWhenThereIsNoIndex() {
+        void shouldThrowsIndexOutOfBoundsExceptionWhenThereIsNoIndex() {
             ListIterator<Student> listIterator = studentList.listIterator();
 
             assertThrows(IndexOutOfBoundsException.class, () -> listIterator.previousIndex());
         }
 
         @Test
-        void shouldReplaceTheLastElementReturnedByNextWhenWeCallMethodSet() {
+        void shouldReplaceTheLastElementReturnedByNext() {
             Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
             ListIterator<Student> listIterator = studentList.listIterator();
-
             listIterator.next();
             listIterator.set(st3);
             listIterator.next();
@@ -434,27 +399,16 @@ class StudentListTest {
         }
 
         @Test
-        void shouldAddTheElementAtTheIndexZeroWhenWeCallAddMethodWithoutCallingNextMethod() {
-            List<Student> studentList = new StudentList<>();
-            Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
-            Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
-            Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
+        void shouldAddTheElementAtTheIndexZero() {
             Student st4 = new Student("Patru", LocalDate.of(2008, 1, 1), "Student FOUR");
-            studentList.add(st1);
-            studentList.add(st2);
-            studentList.add(st3);
             ListIterator<Student> listIterator = studentList.listIterator();
-
             listIterator.add(st4);
 
             assertEquals(st4, studentList.get(0));
-            assertEquals(st1, studentList.get(1));
-            assertEquals(st2, studentList.get(2));
-            assertEquals(st3, studentList.get(3));
         }
 
         @Test
-        void shouldCheckIfAddedObjectIsAddedAtTheRigntIndexWhenWeCallMethodAdd() {
+        void shouldCheckIfAddedObjectIsAddedAtTheRignthIndex() {
             Student st4 = new Student("Patru", LocalDate.of(2008, 1, 1), "Student FOUR");
             ListIterator<Student> listIterator = studentList.listIterator();
             listIterator.next();
@@ -467,7 +421,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldCheckIfTheListIsRightWhenWeCallMethodSubList() {
+    void shouldCheckIfReturnedSubListIsCorrect() {
         List<Student> studentList1 = new StudentList<>();
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
@@ -485,7 +439,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldThrowIndexOutOfBoundsExceptionWhenWeCallSubListWithNonExistingIndexes() {
+    void shouldThrowIndexOutOfBoundsExceptionWhenIndexDoesNotExist() {
         Student st4 = new Student("Patru", LocalDate.of(2008, 1, 1), "Student FOUR");
         Student st5 = new Student("CINCI", LocalDate.of(2000, 1, 1), "Student FIVE");
         studentList.add(st4);
@@ -496,7 +450,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldAddACollectionToTheActualListWhenWeCallAddAllMethod() {
+    void shouldAddACollectionToTheActualList() {
         List<Student> studentList = new StudentList<>();
         List<Student> studentListA = new StudentList<>();
         List<Student> studentListE = new StudentList<>();
@@ -518,19 +472,18 @@ class StudentListTest {
         studentListE.add(st2);
         studentListE.add(st3);
 
-        boolean isAdded = studentListA.addAll(studentList);
+        assertTrue(studentListA.addAll(studentList));
         assertArrayEquals(studentListE.toArray(), studentListA.toArray());
-        assertTrue(isAdded);
     }
 
     @Test
-    void shouldThrowNullPointerExceptionWhenWeCallMethodToArrayWithANullArgument() {
+    void shouldThrowNullPointerExceptionWhenArgumentIsNull() {
         Object[] test = null;
         assertThrows(NullPointerException.class, () -> studentList.toArray(test));
     }
 
     @Test
-    void shouldCheckIfReturnedArrayIsEqualsToTheListWhenWeCallToArrayMethod() {
+    void shouldCheckIfReturnedArrayIsEqualsToTheList() {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
@@ -542,7 +495,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldCheckIdTheToArrayMethodPutNullIfTheArrayIsGreaterThanSizeOfTheListWhenWeCallToArrayMeghod() {
+    void shouldCheckIfTheLastObjectIsNull() {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
@@ -553,8 +506,8 @@ class StudentListTest {
     }
 
     @Test
-    void shouldReturnTrueIfCopyAndResizeTheArrayIfTheSizeOfListIsHigherWhenLengthOfArrayWhenWeCallToArrayMethod() {
-       Object[] resultedArray = studentList.toArray(new Student[2]);
+    void shouldReturnTrueIfResultedArrayIsEqualsToTheSizeOfTheList() {
+        Object[] resultedArray = studentList.toArray(new Student[2]);
         assertTrue(3 == resultedArray.length);
     }
 
@@ -579,7 +532,7 @@ class StudentListTest {
     }
 
     @Test
-    void shouldPassTheTestIfTheArrayIsResizedWhenWeCallResizeArrayMethod() {
+    void shouldReturnTheListWithTheSizeEleven() {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
