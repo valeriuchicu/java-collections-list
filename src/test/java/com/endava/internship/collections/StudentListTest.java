@@ -1,6 +1,5 @@
 package com.endava.internship.collections;
 
-import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,20 +37,6 @@ class StudentListTest {
     void shouldThrowIllegalArgumentExceptionWithInvalidParameter() {
         Throwable exceptionThatWasThrown = assertThrows(IllegalArgumentException.class, () -> new StudentList<Student>(-1));
         assertEquals(exceptionThatWasThrown.getMessage(), "Illegal Capacity: " + "-1");
-    }
-
-    @Test
-    void shouldCreateAListWithDefaultCapacity() {
-        List<Student> studentList = new StudentList<>(8);
-
-        assertNotNull(studentList);
-    }
-
-    @Test
-    void shouldCreatListWithLengthFifteen() {
-        List<Student> studentList = new StudentList<>(15);
-
-        assertNotNull(studentList);
     }
 
     @Test
@@ -89,7 +73,7 @@ class StudentListTest {
     }
 
     @Nested
-    class testAllMethodsOfTheInnerClassIterator {
+    class TestAllMethodsOfTheInnerClassIterator {
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         @Test
@@ -101,7 +85,7 @@ class StudentListTest {
 
         @Test
         void shouldThrowNoSuchElementExceptionWhenNextDoesNotExist() {
-            List<Student> studentList = new StudentList<>();
+            List<Student> studentList = new StudentList<>(13);
             Iterator<Student> iterator = studentList.iterator();
 
             assertThrows(NoSuchElementException.class, () -> iterator.next());
@@ -277,7 +261,7 @@ class StudentListTest {
 
     @Test
     void shouldReturnTheLastIndexOfTheObject() {
-        List<Student> studentList = new StudentList<>();
+        List<Student> studentList = new StudentList<>(8);
         Student st1 = new Student("Unu", LocalDate.of(2001, 1, 1), "Student ONE");
         Student st2 = new Student("Doi", LocalDate.of(2004, 1, 1), "Student TWO");
         Student st3 = new Student("Trei", LocalDate.of(2006, 1, 1), "Student TREE");
@@ -313,7 +297,7 @@ class StudentListTest {
     }
 
     @Nested
-    class testAllMethodsOfTheInnerClassListIterator {
+    class TestAllMethodsOfTheInnerClassListIterator {
 
         @Test
         void shouldStartFromTheGivenIndex() {
